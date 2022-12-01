@@ -2,8 +2,7 @@ ArduinoHondaOBD
 ===========
 
 An arduino code that reads Honda OBD Protocol and translates it to ELM327 protocol.
-I use Torque app to read and display the data on my android phone (via bluetooth),
-and a LCD (2x6) to display it on my car's dashboard.
+I use Torque app to read and display the data on my android phone (via bluetooth).
 
 Please refer to the screenshots below.
 
@@ -38,14 +37,6 @@ Wiring for hobd_uni (Joined ELM and LCD codes)
     Rx ---------------------- Pin11
     Tx ---------------------- Pin10
 
-    Piezo Buzzer              Arduino Uno               
-    (+) --------------------- Pin13
-    (-) --------------------- Gnd
-
-    Tact Switch               Arduino Uno               
-    (+) --------------------- Pin17 (A3)
-    (-) --------------------- Gnd
-
     Voltage Divider           Arduino Uno               
     +12V divider circuit ---- Pin14 (A0)
     (680k ohms and 220k ohms)
@@ -64,9 +55,6 @@ Screenshots (Andorid App TORQUE)
 NOTES
 -----
 * Added button for changing page (5ms) and changing ecu mode (3s).
-* Added Fault codes reader @ lcd page 3
-* Added LCD @ I2C support
-  - #define LCD_i2c TRUE // Using LCD 16x2 I2C mode
 * Added direct HOBD access API (ELM mode) used for undefined PIDs on OBD2
   - // direct honda PID access
   - // 1 byte access (21AA) // 21 = 1 byte, AA = address

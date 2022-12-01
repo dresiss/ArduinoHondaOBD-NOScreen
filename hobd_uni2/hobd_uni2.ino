@@ -6,8 +6,6 @@
  - Arduino Nano (Compatible board)
  - HC-05 Bluetooth module
  - Resistors 680k ohms and 220k ohms
- - Piezo Buzzer
- - LCD 16x2 I2C
  Optional:
  - 100 psi transducer for fuel pressure (0.5v - 4.5v)
  - AEM AFR UEGO
@@ -44,7 +42,6 @@
  - 10 = Bluetooth RX
  - 11 = Bluetooth TX
  - 12 = K-Line (Serial In)
- - 13 = Piezo buzzer (+)
 
  - 14 = (A0) Voltage divider (Input Signal)
  - 15 = (A1) 100 PSI Fuel Pressure
@@ -56,7 +53,7 @@
  - 21 = (A7)
 */
 
-#define APPNAME "Honda UNI   v1.0" // 16 chars
+#define APPNAME "Honda OBD v1.0  " // 16 chars
 
 #include <EEPROM.h>
 
@@ -64,7 +61,6 @@
 #define PIN_LOCK 4
 #define PIN_UNLOCK 5
 #define PIN_AC 6
-#define PIN_BUZZER 13
 // IN
 #define PIN_BUTTON 7
 #define PIN_DOOR 8
@@ -73,8 +69,6 @@
 #define PIN_AFR 16
 #define PIN_TH 17
 
-#include <LiquidCrystal_I2C.h>
-LiquidCrystal_I2C lcd(0x27, 16, 2); // my car lcd = 0x3f, my bench lcd = 0x27
 
 // comment the PCINT1_vect,PCINT2_vect,PCINT3_vect handle in softserial library
 // since we are just using D10,D11,D12 and we want to handle interrupts @ A0 - A5
@@ -113,13 +107,10 @@ byte gear, vsstop=0,vssavg=0;
 
 
 byte obd_select = 2; // 1 = obd1, 2 = obd2
-byte pag_select = 5; // lcd page
 
 byte ect_alarm = 98; // celcius
 byte vss_alarm = 100; // kph / + 10
 byte th_threshold = 4; // celcius / + 10
-
-bool isButtonPressed = false;
 
 // voltage divider
 //float R1 = 30000.0;
@@ -179,9 +170,6 @@ int dlcCommand(byte cmd, byte num, byte loc, byte len) {
     if (dlcSerial.available()) {
       dlcdata[i] = dlcSerial.read();
       i++;
-    }
-    else {
-      procButtons(); // haxx
     }
     //delay(1); // this is required
   }
@@ -543,37 +531,6 @@ void procbtSerial() {
     }
 }  
 
-void lcdZeroPaddedPrint(float f, byte len, bool decimal = false) {
-  long i;
-  if (decimal) {
-    f *= 10;
-    len++;
-  }
-  i = f;
-  
-  switch (len)
-  {
-    case 6:
-      lcd.print(i/100000);
-      i %= 100000;
-    case 5:
-      lcd.print(i/10000);
-      i %= 10000;
-    case 4:
-      lcd.print(i/1000);
-      i %= 1000;
-    case 3:
-      lcd.print(i/100);
-      i %= 100;
-    case 2:
-      lcd.print(i/10);
-      i %= 10;
-    default:
-      if (decimal) lcd.print(".");
-      lcd.print(i);
-  }
-}
-
 /* Useful Constants */
 #define SECS_PER_MIN  (60UL)
 #define SECS_PER_HOUR (3600UL)
@@ -584,197 +541,6 @@ void lcdZeroPaddedPrint(float f, byte len, bool decimal = false) {
 #define numberOfMinutes(_time_) ((_time_ / SECS_PER_MIN) % SECS_PER_MIN) 
 #define numberOfHours(_time_) (( _time_% SECS_PER_DAY) / SECS_PER_HOUR)
 #define elapsedDays(_time_) ( _time_ / SECS_PER_DAY)  
-
-void lcdSecondsToTimePrint(unsigned long i) {
-  lcdZeroPaddedPrint(numberOfHours(i), 2);
-  lcd.print(":");
-  lcdZeroPaddedPrint(numberOfMinutes(i), 2);
-  lcd.print(":");
-  lcdZeroPaddedPrint(numberOfSeconds(i), 2);
-}
-
-// display routines (2x16 LCD)
-void procDisplay(void) {
-    //lcd.clear();
-    if (pag_select == 0) {
-      // display 1
-      // R0000 S000 V00.0
-      // E00 I00 M000 T00
-  
-      lcd.setCursor(0,0);
-      lcd.print("R");
-      lcdZeroPaddedPrint(rpm, 4);
-      lcd.print(" S");
-      lcdZeroPaddedPrint(vss, 3);
-      lcd.print(" V");
-      lcdZeroPaddedPrint(volt, 2, true);
-  
-      lcd.setCursor(0,1);
-      lcd.print("E");
-      lcdZeroPaddedPrint(ect, 2);
-      lcd.print(" I");
-      lcdZeroPaddedPrint(iat, 2);
-      lcd.print(" M");
-      lcdZeroPaddedPrint(maps, 3);
-      lcd.print(" T");
-      if (tps < 0) {
-        lcd.print("-");
-        lcdZeroPaddedPrint(tps, 1);
-      }
-      else {
-        lcdZeroPaddedPrint(tps, 2);
-      }
-    }
-    else if (pag_select == 1) {
-      // display 2
-      // IGN+16.5 AC0 VT0
-      // INJ00 IAC00 O0.0
-  
-      lcd.setCursor(0,0);
-      lcd.print("IGN");
-      if (ign < 0) { lcd.print("-"); }
-      else { lcd.print("+"); }
-      //lcd.print(ign);
-      lcdZeroPaddedPrint(ign, 2, true);
-      lcd.print(" AC");
-      lcd.print(sw_aircon);
-      lcd.print(" VT");
-      lcd.print(sw_vtec);
-  
-      lcd.setCursor(0,1);
-      lcd.print("INJ");
-      lcdZeroPaddedPrint(inj, 2);
-      lcd.print(" IAC");
-      lcdZeroPaddedPrint(iacv, 2);
-      lcd.print(" O");
-      lcdZeroPaddedPrint(o2, 1, true);
-    }
-    else if (pag_select == 2) {
-      // display 3 // trip computer
-      // S000  A000  T000
-      // T00:00:00 D000.0
-  
-      lcd.setCursor(0,0);
-      lcd.print("S");
-      lcdZeroPaddedPrint(vss, 3);
-      lcd.print("  A");
-      lcdZeroPaddedPrint(vssavg, 3);
-      lcd.print("  T");
-      lcdZeroPaddedPrint(vsstop, 3);
-  
-      lcd.setCursor(0,1);
-      unsigned long total_time = (idle_time + running_time) / 4; // running time in second @ 250ms
-      lcd.print("T");
-      lcdSecondsToTimePrint(total_time);
-      lcd.print(" D");
-      unsigned int total_distance = distance / 100; // in 000.0km format
-      lcdZeroPaddedPrint(total_distance, 3, true);
-    }
-    else if (pag_select == 3) {
-      // display 3 // CEL/MIL codes
-      byte i;
-  
-      //byte hbits = i >> 4;
-      //byte lbits = i & 0xf;
-  
-      // display up to 10 error codes
-      // 00 00 00 00 00
-      // 00 00 00 00 00
-      lcd.setCursor(0,0);
-      if (dtcCount == 0) {
-        lcd.print("    NO ERROR    ");
-        lcd.setCursor(0,1);
-        lcd.print("                ");
-      }
-      else {
-        for (i=0; i<dtcCount; i++) {
-          if (dtcErrors[i] < 10) { lcd.print("0"); }
-          lcd.print(dtcErrors[i]);
-          lcd.print(" ");
-  
-          if (dtcCount == 5) {
-            lcd.print("+");
-            lcd.setCursor(0,1);
-          }
-          if (dtcCount == 10) {
-            lcd.print("+");
-            break;
-          }
-        }
-      }
-    }
-    else if (pag_select == 4) {
-      // display 4 // extra sensor
-      // AFR14.7  FP035.0
-      // TH00.0 CP0 V00.0
-  
-      lcd.setCursor(0,0);
-      lcd.print("AFR");
-      lcdZeroPaddedPrint(afr, 2, true);
-      lcd.print("  FP");
-      lcdZeroPaddedPrint(fp, 3, true);
-
-      lcd.setCursor(0,1);
-      lcd.print("TH");
-      lcdZeroPaddedPrint(th, 2, true);
-      lcd.print(" CP");
-      lcdZeroPaddedPrint(cp, 1);
-      lcd.print(" V");
-      lcdZeroPaddedPrint(volt2, 2, true);
-    }
-    else if (pag_select == 5) {
-      // display 5
-      // EC0000 ET000 HO1
-      // MP000 MF000  GR0
-
-      lcd.setCursor(0,0);
-      lcd.print("EC");
-      lcdZeroPaddedPrint(dlcChecksumError, 4);
-      lcd.print(" ET");
-      lcdZeroPaddedPrint(dlcTimeout, 3);
-      lcd.print(" HO");
-      lcd.print(obd_select);
-
-      lcd.setCursor(0,1);
-      lcd.print("MP");
-      lcdZeroPaddedPrint(maps, 3);
-      lcd.print(" MF");
-      lcdZeroPaddedPrint(maf, 3);
-      lcd.print("  GR");
-      lcd.print(gear);
-    }
-    /*
-    else if (pag_select == 5) {
-      // Top Recorded
-      // R0000 S000 V00.0
-      // E00 I00 M000 T00
-      lcd.setCursor(0,0);
-      lcd.print("R");
-  
-      lcdZeroPaddedPrint(rpmtop, 4);
-      lcd.print(" S");
-      lcdZeroPaddedPrint(vsstop, 3);
-      lcd.print(" V");
-      lcdZeroPaddedPrint(volttop, 3, true);
-  
-      lcd.setCursor(0,1);
-      lcd.print("E");
-      lcdZeroPaddedPrint(ecttop, 2);
-      lcd.print(" I");
-      lcdZeroPaddedPrint(iattop, 2);
-      lcd.print(" M");
-      lcdZeroPaddedPrint(mapstop, 3);
-      lcd.print(" T");
-      if (tps < 0) {
-        lcd.print("-");
-        lcdZeroPaddedPrint(tpstop, 1);
-      }
-      else {
-        lcdZeroPaddedPrint(tpstop, 2);
-      }
-    }
-    */
-}  
 
 // Read ECU Data
 void readEcuData() {
@@ -967,55 +733,6 @@ void pushPinHi(byte pin, unsigned int delayms)
   digitalWrite(pin, LOW);
 }
 
-void procButtons() {
-  static unsigned long buttonsTick = 0;
-  static bool button_press_old = HIGH;
-
-  int button_press_new = digitalRead(PIN_BUTTON); // change to multiple button
-
-  if (button_press_new != button_press_old) { // change state
-    if (button_press_new == HIGH) { // on released
-      if (millis() - buttonsTick >= 5000) { // long press 5 secs
-        scanDtcError();
-        //resetECU();
-      }
-      else if (millis() - buttonsTick >= 3000) { // long press 3 secs
-        obd_select++;
-        if (obd_select > 2) {
-          obd_select = 1;
-        }
-        EEPROM.write(0, obd_select);
-      }
-      else if (millis() - buttonsTick >= 5) { // short press 5 ms
-        pag_select++;
-        if (pag_select > 5) {
-          pag_select = 0;
-        }
-        //EEPROM.write(1, pag_select);
-      }
-      buttonsTick = 0; // reset timer
-      isButtonPressed = false;
-    }
-    else { // on pressed
-      buttonsTick = millis(); // start timer
-      isButtonPressed = true;
-    }
-    button_press_old = button_press_new;
-  }
-
-  if (button_press_new == LOW) { // while pressed
-    if (millis() - buttonsTick == 5) { // beep @ 5 ms
-      pushPinHi(PIN_BUZZER, 50); // beep 50ms
-    }
-    else if (millis() - buttonsTick == 3000) { // beep @  3 secs
-      pushPinHi(PIN_BUZZER, 50); // beep 50ms
-    }
-    else if (millis() - buttonsTick == 5000) { // beep @  5 secs
-      pushPinHi(PIN_BUZZER, 50); // beep 50ms
-    }
-  }
-}
-
 // Process Data
 void execEvery(int ms) {
   static unsigned long msTick = millis();
@@ -1102,17 +819,12 @@ void execEvery(int ms) {
   
     gear = vss / (rpm+1) * 150 + 0.3;
 
-    procDisplay();
   }
 }
 
 void setup()
 {
   pinMode(PIN_AC, OUTPUT); // Air Condition
-  pinMode(PIN_BUZZER, OUTPUT); // Piezo Buzzer
-
-  pinMode(PIN_BUTTON, INPUT_PULLUP); // Button
-
   pinMode(PIN_DOOR, INPUT); // Door
   pinMode(PIN_VOLT, INPUT); // Volt meter
   pinMode(PIN_FP, INPUT); // 100psi Fuel Pressure
@@ -1123,16 +835,6 @@ void setup()
   btSerial.begin(9600); // HC-05
   //btSerial.begin(38400); // HC-06
   dlcSerial.begin(9600);
-
-  // LCD I2C init
-  lcd.init();
-  lcd.backlight();
-
-  // initial beep
-  for (int i=0; i<3; i++) {
-    pushPinHi(PIN_BUZZER, 50); // beep 50ms
-    delay(80);
-  }
 
   if (EEPROM.read(0) == 0xff) { EEPROM.write(0, obd_select); }
   //if (EEPROM.read(1) == 0xff) { EEPROM.write(1, pag_select); }
@@ -1149,24 +851,12 @@ void setup()
 
   dlcInit();
 
-  lcd.clear();
-  lcd.setCursor(0, 0);
-  lcd.print(APPNAME);
-  lcd.setCursor(0,1);
-  lcd.print(" ECU Type: OBD");
-  lcd.print(obd_select);
-
   delay(1000);
 }
 
 void loop() {
-  procButtons();
-  
-  if (!isButtonPressed) {
-    readExtraSensors();
-    //readEcuData();
-    procbtSerial();
-    
-    execEvery(250);
-  }
+  readExtraSensors();
+  //readEcuData();
+  procbtSerial();
+  execEvery(250);
 }
