@@ -24,7 +24,6 @@ Files
 -----
 * hobd_uni - unified code for ELM bluetooth and LCD display with other improvements.
 * hobd_elm - implements Honda OBD to ELM OBD2 protocol (bluetooth) - not updated
-* hobd_lcd - implements Honda OBD to LCD display - not updated
 * UNI_wiring.png - Unified wiring diagram for arduino UNO (compatible)
 
 
@@ -38,15 +37,6 @@ Wiring for hobd_uni (Joined ELM and LCD codes)
     HC-05 Bluetooth           Arduino Uno               
     Rx ---------------------- Pin11
     Tx ---------------------- Pin10
-
-    LCD 16x2                  Arduino Uno               
-    RS ---------------------- Pin9
-    Enable ------------------ Pin8
-    D4 ---------------------- Pin7
-    D5 ---------------------- Pin6
-    D6 ---------------------- Pin5
-    D7 ---------------------- Pin4
-    VO ---------------------- 10k Potentiometer (+5V to Gnd)
 
     Piezo Buzzer              Arduino Uno               
     (+) --------------------- Pin13
@@ -62,42 +52,6 @@ Wiring for hobd_uni (Joined ELM and LCD codes)
     
 
 ![Alt text](https://raw.github.com/kerpz/ArduinoHondaOBD/master/images/UNI_wiring.png "UNI Wiring Image")
-
-Wiring for hobd_elm (Deprecated use hobd_uni)
---------------------
-    Honda 3 Pin DLC           Arduino Uno
-    Gnd --------------------- Gnd
-    +12 --------------------- Vin
-    K-line ------------------ Pin12
-
-    HC-05 Bluetooth           Arduino Uno               
-    Rx ---------------------- Pin11
-    Tx ---------------------- Pin10
-
-
-Wiring for hobd_lcd (Deprecated use hobd_uni)
----------------
-    Honda 3 Pin DLC           Arduino Uno
-    Gnd --------------------- Gnd
-    +12 --------------------- Vin
-    K-line ------------------ Pin12
-
-    LCD 16x2                  Arduino Uno               
-    RS ---------------------- Pin9
-    Enable ------------------ Pin8
-    D4 ---------------------- Pin7
-    D5 ---------------------- Pin6
-    D6 ---------------------- Pin5
-    D7 ---------------------- Pin4
-    VO ---------------------- 10k Potentiometer (+5V to Gnd)
-
-
-Screenshots (LCD 16x2)
----------------
-
-![Alt text](https://raw.github.com/kerpz/ArduinoHondaOBD/master/images/LCD_01.png "LCD Screenshot 01")
-![Alt text](https://raw.github.com/kerpz/ArduinoHondaOBD/master/images/LCD_02.png "LCD Screenshot 02")
-![Alt text](https://raw.github.com/kerpz/ArduinoHondaOBD/master/images/LCD_03.png "LCD Screenshot 03")
 
 Screenshots (Andorid App TORQUE)
 ---------------
@@ -122,8 +76,3 @@ NOTES
   - // set arduino pin (ATSAPNNX) // NN = pin, X = value (value is 1 or 0)
   - // get arduino pin (ATDAPNN) // NN = pin
 * Tested on P2T ODB2 stock and P30 ODB1 chipped
-
-TODO
------
-* Add 128x64 LCD @ SPI support
-* Add 20x4 LCD @ I2C support
